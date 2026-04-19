@@ -1,6 +1,6 @@
 # AudioSplitter
 
-A cross-platform desktop GUI for downloading or opening audio/video files, extracting their audio, and splitting it into configurable WAV chunks.
+A cross-platform desktop GUI for downloading, converting, and splitting audio from URLs or local files.
 
 Built with Python + tkinter. Uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for URL downloads and [ffmpeg](https://ffmpeg.org) for all audio processing.
 
@@ -12,12 +12,14 @@ Built with Python + tkinter. Uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for
 
 ## Features
 
-- 🌐 **URL mode** — download from YouTube, Vimeo, Twitter/X, SoundCloud, and [1000+ sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
-- 📂 **Local file mode** — split any audio or video file directly, no download needed
-- ✂️ **Configurable chunk length** — type any duration or use presets (15 s, 29.9 s, 30 s, 60 s)
-- 🎨 **Gruvbox dark theme**
-- 🔧 **Tool path configuration** — manually set yt-dlp and ffmpeg paths if auto-detection fails
-- 💾 **Persistent settings** — tool paths saved across sessions
+- **✂️ Split** — download from a URL or open a local file and split the audio into fixed-length chunks
+- **🔄 Convert** — download from a URL and convert directly to a chosen audio format
+- **📋 Playlist** — download and convert every track in a playlist, album, or set
+- **Output format selector** — WAV, MP3 (320/192/128 kbps), AAC, FLAC, OGG, OPUS
+- **Configurable chunk length** — type any duration or use presets (15 s, 29.9 s, 30 s, 60 s)
+- **🎨 Gruvbox dark theme**
+- **Tool path configuration** — manually set yt-dlp and ffmpeg paths if auto-detection fails
+- **Persistent settings** — tool paths saved across sessions
 
 ## Releases
 
@@ -34,12 +36,12 @@ Pre-built executables for macOS and Windows are available on the [Releases](../.
 **1. Install dependencies**
 ```bash
 brew install ffmpeg
-brew install yt-dlp        # only needed for URL mode
-brew install python-tk@3.14  # replace 3.14 with your Python version
-pip install yt-dlp
+brew install yt-dlp
+brew install python-tk@3.14
 ```
 
-> Check your Python version: `python3 --version`
+> Replace `3.14` with your Python version — check with `python3 --version`.
+> yt-dlp is only required for URL, Convert, and Playlist modes. Local file Split works with just ffmpeg.
 
 **2. Run from source**
 ```bash
@@ -71,10 +73,9 @@ ffmpeg:  /opt/homebrew/bin/ffmpeg
 ```bat
 winget install ffmpeg
 winget install yt-dlp
-pip install yt-dlp
 ```
 
-Or download ffmpeg from https://ffmpeg.org/download.html and add its `bin/` folder to your PATH.
+> yt-dlp is only required for URL, Convert, and Playlist modes. Local file Split works with just ffmpeg.
 
 tkinter is bundled with the official Python installer from https://www.python.org/downloads/windows/ — ensure **tcl/tk and IDLE** is checked during setup.
 
@@ -89,7 +90,7 @@ python build.py
 ```
 Output: `dist\AudioSplitter.exe`
 
-> **Defender warning:** Windows Defender may flag the `.exe` as suspicious — this is a known PyInstaller false positive. Right-click → **Run anyway**.
+> **Defender warning:** Windows Defender may flag the `.exe` — this is a known PyInstaller false positive. Right-click → **Run anyway**.
 
 ---
 
@@ -100,20 +101,23 @@ Output: `dist\AudioSplitter.exe`
 Debian / Ubuntu / Mint:
 ```bash
 sudo apt install ffmpeg python3-tk
-pip install yt-dlp
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
 ```
 
 Fedora / RHEL:
 ```bash
 sudo dnf install ffmpeg python3-tkinter
-pip install yt-dlp
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
 ```
 
 Arch / Manjaro:
 ```bash
-sudo pacman -S ffmpeg tk
-pip install yt-dlp
+sudo pacman -S ffmpeg tk yt-dlp
 ```
+
+> yt-dlp is only required for URL, Convert, and Playlist modes. Local file Split works with just ffmpeg.
 
 **2. Run from source**
 ```bash
@@ -150,18 +154,51 @@ You can also trigger a manual build (without creating a release) from the **Acti
 
 ## Usage
 
-### URL mode
-1. Click **🌐 URL**
-2. Paste a supported URL
-3. Set chunk length and output folder
-4. Press **▶ DOWNLOAD & SPLIT**
+### ✂️ Split mode
+Download a URL or open a local file and split its audio into equal-length chunks.
 
-### Local file mode
-1. Click **📂 Local File**
-2. Browse to your file — output folder auto-fills to the file's directory
-3. Press **▶ SPLIT FILE**
+1. Click **✂️ Split**
+2. Choose **🌐 URL** or **📂 Local File**
+3. Paste a URL or browse to a file
+4. Set chunk length and output folder
+5. Press **▶ DOWNLOAD & SPLIT**
 
-Supported input formats: `mp3` `wav` `aac` `flac` `ogg` `m4a` `opus` `wma` `mp4` `mkv` `mov` `avi` `webm` `m4v` `flv` `wmv`
+Output: `<output_folder>/<title>_chunks/<title>_0000.wav`, `_0001.wav`, …
+
+### 🔄 Convert mode
+Download from a URL and save directly as a chosen audio format.
+
+1. Click **🔄 Convert**
+2. Paste a URL
+3. Pick an output format from the dropdown
+4. Press **▶ DOWNLOAD & CONVERT**
+
+Output: `<output_folder>/<title>.<ext>`
+
+### 📋 Playlist mode
+Download and convert every track in a playlist, album, or channel.
+
+1. Click **📋 Playlist**
+2. Paste a playlist URL (YouTube, SoundCloud, Bandcamp, etc.)
+3. Pick an output format from the dropdown
+4. Press **▶ DOWNLOAD PLAYLIST**
+
+Output: `<output_folder>/<playlist_title>/<track_title>.<ext>`
+
+Supports YouTube playlists, SoundCloud sets, Bandcamp albums, and [any playlist source yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
+
+### Output formats
+
+| Format | Details |
+|--------|---------|
+| WAV | Lossless PCM, 44.1 kHz |
+| MP3 320 kbps | Highest quality lossy |
+| MP3 192 kbps | Good quality, smaller size |
+| MP3 128 kbps | Smaller size |
+| AAC 256 kbps | Efficient lossy, broad compatibility |
+| FLAC | Lossless compressed |
+| OGG Vorbis 192 kbps | Open format lossy |
+| OPUS 128 kbps | Modern efficient lossy |
 
 ---
 
@@ -176,18 +213,6 @@ ffmpeg -f segment -segment_time <chunk_length> -ac 1 -ar 44100 -reset_timestamps
 | `-ac 1` | Mono audio |
 | `-ar 44100` | 44.1 kHz sample rate |
 | `-reset_timestamps 1` | Each chunk starts at 0:00 |
-
----
-
-## Output Structure
-
-```
-~/AudioSplitter/
-└── My_Video_Title_chunks/
-    ├── My_Video_Title_0000.wav
-    ├── My_Video_Title_0001.wav
-    └── ...
-```
 
 ---
 
