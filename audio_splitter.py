@@ -106,7 +106,6 @@ class AudioSplitterApp(tk.Tk):
         self.configure(bg=BG)
         self.resizable(True, True)
 
-        self._output_dir = Path.home() / "AudioSplitter"
         self._running    = False
         self._thread     = None
         # Modes: "split" | "convert" | "playlist"
@@ -115,6 +114,7 @@ class AudioSplitterApp(tk.Tk):
         cfg = load_config()
         self._ytdlp_path  = cfg.get("ytdlp_path",  probe_binary("yt-dlp"))
         self._ffmpeg_path = cfg.get("ffmpeg_path",  probe_binary("ffmpeg"))
+        self._output_dir  = Path(cfg.get("output_dir", str(Path.home() / "AudioSplitter")))
 
         self._build_ui()
         self._check_deps()
@@ -565,6 +565,9 @@ class AudioSplitterApp(tk.Tk):
         if d:
             self._output_dir = Path(d)
             self.dir_var.set(d)
+            cfg = load_config()
+            cfg["output_dir"] = d
+            save_config(cfg)
 
     def _set_indicator(self, label, ok):
         self.after(0, lambda: label.config(text="✓" if ok else "✗",
@@ -591,8 +594,12 @@ class AudioSplitterApp(tk.Tk):
             all_ok = False
 
         if all_ok:
-            save_config({"ytdlp_path": ytdlp, "ffmpeg_path": ffmpeg})
-            self._log("Paths saved to ~/.audiosplitter_config.json", "dim")
+            save_config({
+                "ytdlp_path":  ytdlp,
+                "ffmpeg_path": ffmpeg,
+                "output_dir":  self.dir_var.get(),
+            })
+            self._log("Settings saved to ~/.audiosplitter_config.json", "dim")
             self._set_status("Paths verified and saved.", SUCCESS)
             self.btn_start.config(state="normal")
         else:
