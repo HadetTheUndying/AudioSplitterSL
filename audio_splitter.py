@@ -101,8 +101,8 @@ class AudioSplitterApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("AudioSplitter")
-        self.geometry("820x860")
-        self.minsize(660, 720)
+        self.geometry("820x680")
+        self.minsize(660, 560)
         self.configure(bg=BG)
         self.resizable(True, True)
 
@@ -129,6 +129,10 @@ class AudioSplitterApp(tk.Tk):
         tk.Label(header, text="SPLITTER", font=("Courier", 22, "bold"), fg=TEXT,   bg=BG).pack(side="left")
         tk.Label(header, text="  ·  yt-dlp + ffmpeg",
                  font=("Courier", 10), fg=TEXT_DIM, bg=BG).pack(side="left", padx=(8, 0))
+        tk.Button(header, text="Log", font=("Courier", 10),
+                  bg=BG, fg=BLUE, relief="flat", cursor="hand2",
+                  activebackground=SURFACE, activeforeground=BLUE,
+                  command=self._detach_log, padx=12, pady=4).pack(side="right")
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=30)
 
@@ -140,17 +144,17 @@ class AudioSplitterApp(tk.Tk):
         mode_row = tk.Frame(card, bg=SURFACE)
         mode_row.pack(fill="x", pady=(0, 14))
 
-        self.btn_split    = tk.Button(mode_row, text="✂️  Split",
+        self.btn_split    = tk.Button(mode_row, text="Split",
             font=("Courier", 10, "bold"), relief="flat", cursor="hand2",
             padx=14, pady=6, command=lambda: self._set_mode("split"))
         self.btn_split.pack(side="left", padx=(0, 6))
 
-        self.btn_convert  = tk.Button(mode_row, text="🔄  Convert",
+        self.btn_convert  = tk.Button(mode_row, text="Convert",
             font=("Courier", 10, "bold"), relief="flat", cursor="hand2",
             padx=14, pady=6, command=lambda: self._set_mode("convert"))
         self.btn_convert.pack(side="left", padx=(0, 6))
 
-        self.btn_playlist = tk.Button(mode_row, text="📋  Playlist",
+        self.btn_playlist = tk.Button(mode_row, text="Playlist",
             font=("Courier", 10, "bold"), relief="flat", cursor="hand2",
             padx=14, pady=6, command=lambda: self._set_mode("playlist"))
         self.btn_playlist.pack(side="left")
@@ -163,11 +167,11 @@ class AudioSplitterApp(tk.Tk):
         split_src_row = tk.Frame(self.split_frame, bg=SURFACE)
         split_src_row.pack(fill="x", pady=(0, 10))
         self._split_src = tk.StringVar(value="url")
-        self.btn_split_url  = tk.Button(split_src_row, text="🌐  URL",
+        self.btn_split_url  = tk.Button(split_src_row, text="URL",
             font=("Courier", 9, "bold"), relief="flat", cursor="hand2",
             padx=12, pady=4, command=lambda: self._set_split_src("url"))
         self.btn_split_url.pack(side="left", padx=(0, 6))
-        self.btn_split_file = tk.Button(split_src_row, text="📂  Local File",
+        self.btn_split_file = tk.Button(split_src_row, text="Local File",
             font=("Courier", 9, "bold"), relief="flat", cursor="hand2",
             padx=12, pady=4, command=lambda: self._set_split_src("file"))
         self.btn_split_file.pack(side="left")
@@ -217,9 +221,40 @@ class AudioSplitterApp(tk.Tk):
 
         # ── Convert mode ──────────────────────────────────────────────────────
         self.convert_frame = tk.Frame(card, bg=SURFACE)
-        tk.Label(self.convert_frame, text="VIDEO / AUDIO URL",
+
+        # Audio / Video sub-toggle
+        cv_src_row = tk.Frame(self.convert_frame, bg=SURFACE)
+        cv_src_row.pack(fill="x", pady=(0, 10))
+        self._convert_type = tk.StringVar(value="audio")
+        self.btn_cv_audio = tk.Button(cv_src_row, text="Audio",
+            font=("Courier", 9, "bold"), relief="flat", cursor="hand2",
+            padx=12, pady=4, command=lambda: self._set_convert_type("audio"))
+        self.btn_cv_audio.pack(side="left", padx=(0, 6))
+        self.btn_cv_video = tk.Button(cv_src_row, text="Video",
+            font=("Courier", 9, "bold"), relief="flat", cursor="hand2",
+            padx=12, pady=4, command=lambda: self._set_convert_type("video"))
+        self.btn_cv_video.pack(side="left")
+
+        tk.Frame(self.convert_frame, bg=BORDER, height=1).pack(fill="x", pady=(0, 10))
+
+        # URL / Local file sub-toggle (shown in video mode only for local)
+        cv_input_row = tk.Frame(self.convert_frame, bg=SURFACE)
+        cv_input_row.pack(fill="x", pady=(0, 8))
+        self._convert_src = tk.StringVar(value="url")
+        self.btn_cv_url  = tk.Button(cv_input_row, text="URL",
+            font=("Courier", 9, "bold"), relief="flat", cursor="hand2",
+            padx=12, pady=4, command=lambda: self._set_convert_src("url"))
+        self.btn_cv_url.pack(side="left", padx=(0, 6))
+        self.btn_cv_local = tk.Button(cv_input_row, text="Local File",
+            font=("Courier", 9, "bold"), relief="flat", cursor="hand2",
+            padx=12, pady=4, command=lambda: self._set_convert_src("local"))
+        self.btn_cv_local.pack(side="left")
+
+        # URL input
+        self.cv_url_frame = tk.Frame(self.convert_frame, bg=SURFACE)
+        tk.Label(self.cv_url_frame, text="VIDEO / AUDIO URL",
                  font=("Courier", 9, "bold"), fg=TEXT_DIM, bg=SURFACE).pack(anchor="w")
-        cv_row = tk.Frame(self.convert_frame, bg=SURFACE)
+        cv_row = tk.Frame(self.cv_url_frame, bg=SURFACE)
         cv_row.pack(fill="x", pady=(4, 0))
         self.convert_url_var = tk.StringVar()
         tk.Entry(cv_row, textvariable=self.convert_url_var,
@@ -232,6 +267,85 @@ class AudioSplitterApp(tk.Tk):
                   bg=SURFACE2, fg=TEXT_DIM, relief="flat", cursor="hand2",
                   activebackground=BORDER, activeforeground=TEXT,
                   command=lambda: self.convert_url_var.set(""), padx=10).pack(side="left")
+
+        # Local file input
+        self.cv_local_frame = tk.Frame(self.convert_frame, bg=SURFACE)
+        tk.Label(self.cv_local_frame, text="LOCAL FILE",
+                 font=("Courier", 9, "bold"), fg=TEXT_DIM, bg=SURFACE).pack(anchor="w")
+        cv_lf_row = tk.Frame(self.cv_local_frame, bg=SURFACE)
+        cv_lf_row.pack(fill="x", pady=(4, 0))
+        self.convert_file_var = tk.StringVar()
+        tk.Entry(cv_lf_row, textvariable=self.convert_file_var,
+                 font=("Courier", 11), bg=SURFACE2, fg=TEXT_DIM,
+                 relief="flat", state="readonly",
+                 highlightthickness=1, highlightbackground=BORDER,
+                 highlightcolor=ACCENT
+                 ).pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 10))
+        tk.Button(cv_lf_row, text="Browse…", font=("Courier", 10),
+                  bg=SURFACE2, fg=BLUE, relief="flat", cursor="hand2",
+                  activebackground=BORDER, activeforeground=BLUE,
+                  command=self._browse_convert_file, padx=12, pady=4).pack(side="left", padx=(0, 6))
+        tk.Button(cv_lf_row, text="✕", font=("Courier", 11),
+                  bg=SURFACE2, fg=TEXT_DIM, relief="flat", cursor="hand2",
+                  activebackground=BORDER, activeforeground=TEXT,
+                  command=lambda: self.convert_file_var.set(""), padx=10).pack(side="left")
+        tk.Label(self.cv_local_frame,
+                 text="Supported: mp4 mkv mov avi webm m4v flv wmv mp3 wav aac flac ogg m4a…",
+                 font=("Courier", 8), fg=TEXT_DIM, bg=SURFACE).pack(anchor="w", pady=(5, 0))
+
+        # ── Video options panel (shown when video sub-mode active) ────────────
+        self.video_opts_frame = tk.Frame(self.convert_frame, bg=SURFACE)
+
+        # Scale
+        tk.Label(self.video_opts_frame, text="SCALE",
+                 font=("Courier", 9, "bold"), fg=TEXT_DIM, bg=SURFACE).pack(anchor="w", pady=(12, 0))
+        scale_row = tk.Frame(self.video_opts_frame, bg=SURFACE)
+        scale_row.pack(fill="x", pady=(4, 0))
+
+        self.scale_var = tk.StringVar(value="1/2 — Half size")
+        scale_options = [
+            "1/1 — Original size",
+            "1/2 — Half size",
+            "1/4 — Quarter size",
+            "1920:1080 — 1080p",
+            "1280:720  — 720p",
+            "854:480   — 480p",
+            "640:360   — 360p",
+        ]
+        self.scale_menu = ttk.Combobox(
+            scale_row, textvariable=self.scale_var,
+            values=scale_options, state="readonly",
+            font=("Courier", 11), width=28
+        )
+        self.scale_menu.pack(side="left", ipady=4)
+
+        # Clip (optional)
+        tk.Label(self.video_opts_frame, text="CLIP  (optional — leave blank to convert full file)",
+                 font=("Courier", 9, "bold"), fg=TEXT_DIM, bg=SURFACE).pack(anchor="w", pady=(12, 0))
+
+        clip_row = tk.Frame(self.video_opts_frame, bg=SURFACE)
+        clip_row.pack(fill="x", pady=(4, 0))
+
+        tk.Label(clip_row, text="Start", font=("Courier", 9), fg=TEXT_DIM, bg=SURFACE).pack(side="left", padx=(0, 6))
+        self.clip_start_var = tk.StringVar(value="")
+        tk.Entry(clip_row, textvariable=self.clip_start_var,
+                 font=("Courier", 11), bg=SURFACE2, fg=TEXT,
+                 insertbackground=ACCENT, relief="flat",
+                 highlightthickness=1, highlightbackground=BORDER,
+                 highlightcolor=ACCENT, width=10
+                 ).pack(side="left", ipady=5, padx=(0, 16))
+
+        tk.Label(clip_row, text="Duration", font=("Courier", 9), fg=TEXT_DIM, bg=SURFACE).pack(side="left", padx=(0, 6))
+        self.clip_dur_var = tk.StringVar(value="")
+        tk.Entry(clip_row, textvariable=self.clip_dur_var,
+                 font=("Courier", 11), bg=SURFACE2, fg=TEXT,
+                 insertbackground=ACCENT, relief="flat",
+                 highlightthickness=1, highlightbackground=BORDER,
+                 highlightcolor=ACCENT, width=10
+                 ).pack(side="left", ipady=5)
+
+        tk.Label(clip_row, text="  HH:MM:SS",
+                 font=("Courier", 8), fg=TEXT_DIM, bg=SURFACE).pack(side="left", padx=(8, 0))
 
         # ── Playlist mode ─────────────────────────────────────────────────────
         self.playlist_frame = tk.Frame(card, bg=SURFACE)
@@ -306,8 +420,8 @@ class AudioSplitterApp(tk.Tk):
 
         for label, val in [("15 s", "15"), ("29.9 s", "29.9"), ("30 s", "30"), ("60 s", "60")]:
             tk.Button(chunk_row, text=label, font=("Courier", 10),
-                      bg=SURFACE2, fg=TEXT_DIM, relief="flat", cursor="hand2",
-                      activebackground=BORDER, activeforeground=ACCENT,
+                      bg=SURFACE2, fg=BLUE, relief="flat", cursor="hand2",
+                      activebackground=BORDER, activeforeground=BLUE,
                       command=lambda v=val: self.chunk_var.set(v),
                       padx=10, pady=4).pack(side="left", padx=(0, 6))
 
@@ -336,17 +450,29 @@ class AudioSplitterApp(tk.Tk):
         # ── Tools config ──────────────────────────────────────────────────────
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=30, pady=(14, 0))
 
-        tools_header = tk.Frame(self, bg=BG, pady=6)
-        tools_header.pack(fill="x", padx=30)
-        tk.Label(tools_header, text="TOOL PATHS", font=("Courier", 9, "bold"),
-                 fg=TEXT_DIM, bg=BG).pack(side="left")
+        # Outer wrapper — both toggle row and collapsible card live inside this
+        tools_wrapper = tk.Frame(self, bg=BG)
+        tools_wrapper.pack(fill="x", padx=30)
 
-        tools_card = tk.Frame(self, bg=SURFACE, bd=0, padx=24, pady=16)
-        tools_card.pack(fill="x", padx=30)
+        tools_header = tk.Frame(tools_wrapper, bg=BG, pady=6)
+        tools_header.pack(fill="x")
+        self._tools_expanded = tk.BooleanVar(value=False)
+        self._tools_toggle_btn = tk.Button(
+            tools_header, text="[ + ] Tool Paths",
+            font=("Courier", 9, "bold"), fg=BLUE, bg=BG,
+            relief="flat", cursor="hand2",
+            activebackground=BG, activeforeground=BLUE,
+            command=self._toggle_tools
+        )
+        self._tools_toggle_btn.pack(side="left")
 
-        tk.Label(tools_card, text="YT-DLP PATH", font=("Courier", 9, "bold"),
+        # tools_card is a child of tools_wrapper so it expands inline
+        self.tools_card = tk.Frame(tools_wrapper, bg=SURFACE, bd=0, padx=24, pady=16)
+        # Not packed yet — collapsed by default
+
+        tk.Label(self.tools_card, text="YT-DLP PATH", font=("Courier", 9, "bold"),
                  fg=TEXT_DIM, bg=SURFACE).pack(anchor="w")
-        ytdlp_row = tk.Frame(tools_card, bg=SURFACE)
+        ytdlp_row = tk.Frame(self.tools_card, bg=SURFACE)
         ytdlp_row.pack(fill="x", pady=(4, 0))
         self.ytdlp_var = tk.StringVar(value=self._ytdlp_path)
         tk.Entry(ytdlp_row, textvariable=self.ytdlp_var,
@@ -363,9 +489,9 @@ class AudioSplitterApp(tk.Tk):
         self.ytdlp_status = tk.Label(ytdlp_row, text="", font=("Courier", 14), bg=SURFACE, width=2)
         self.ytdlp_status.pack(side="left")
 
-        tk.Label(tools_card, text="FFMPEG PATH", font=("Courier", 9, "bold"),
+        tk.Label(self.tools_card, text="FFMPEG PATH", font=("Courier", 9, "bold"),
                  fg=TEXT_DIM, bg=SURFACE).pack(anchor="w", pady=(12, 0))
-        ffmpeg_row = tk.Frame(tools_card, bg=SURFACE)
+        ffmpeg_row = tk.Frame(self.tools_card, bg=SURFACE)
         ffmpeg_row.pack(fill="x", pady=(4, 0))
         self.ffmpeg_var = tk.StringVar(value=self._ffmpeg_path)
         tk.Entry(ffmpeg_row, textvariable=self.ffmpeg_var,
@@ -382,20 +508,22 @@ class AudioSplitterApp(tk.Tk):
         self.ffmpeg_status = tk.Label(ffmpeg_row, text="", font=("Courier", 14), bg=SURFACE, width=2)
         self.ffmpeg_status.pack(side="left")
 
-        save_row = tk.Frame(tools_card, bg=SURFACE)
+        save_row = tk.Frame(self.tools_card, bg=SURFACE)
         save_row.pack(fill="x", pady=(10, 0))
-        tk.Button(save_row, text="✓  Verify & Save Paths", font=("Courier", 10),
-                  bg=SURFACE2, fg=ACCENT, relief="flat", cursor="hand2",
-                  activebackground=BORDER, activeforeground=ACCENT,
+        tk.Button(save_row, text="Verify & Save Paths", font=("Courier", 10),
+                  bg=SURFACE2, fg=BLUE, relief="flat", cursor="hand2",
+                  activebackground=BORDER, activeforeground=BLUE,
                   command=self._verify_and_save_paths,
                   padx=14, pady=6).pack(side="left")
 
         # ── Action buttons ────────────────────────────────────────────────────
+        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=30, pady=(14, 0))
+
         btn_row = tk.Frame(self, bg=BG)
-        btn_row.pack(fill="x", padx=30, pady=14)
+        btn_row.pack(fill="x", padx=30, pady=12)
 
         self.btn_start = tk.Button(
-            btn_row, text="▶  DOWNLOAD & SPLIT",
+            btn_row, text="DOWNLOAD & SPLIT",
             font=("Courier", 12, "bold"),
             bg=ACCENT, fg="#1d2021", relief="flat", cursor="hand2",
             activebackground=ACCENT_DIM, activeforeground="#1d2021",
@@ -404,7 +532,7 @@ class AudioSplitterApp(tk.Tk):
         self.btn_start.pack(side="left", padx=(0, 10))
 
         self.btn_stop = tk.Button(
-            btn_row, text="■  STOP",
+            btn_row, text="STOP",
             font=("Courier", 12, "bold"),
             bg=SURFACE2, fg=ERROR, relief="flat", cursor="hand2",
             activebackground=BORDER, activeforeground=ERROR,
@@ -412,7 +540,7 @@ class AudioSplitterApp(tk.Tk):
         )
         self.btn_stop.pack(side="left")
 
-        tk.Button(btn_row, text="📁  Open Folder",
+        tk.Button(btn_row, text="Open Folder",
                   font=("Courier", 10), bg=SURFACE, fg=BLUE,
                   relief="flat", cursor="hand2",
                   activebackground=SURFACE2, activeforeground=BLUE,
@@ -432,29 +560,15 @@ class AudioSplitterApp(tk.Tk):
         self.status_var = tk.StringVar(value="Ready.")
         self.status_label = tk.Label(self, textvariable=self.status_var,
                                      font=("Courier", 10), fg=TEXT_DIM, bg=BG, anchor="w")
-        self.status_label.pack(fill="x", padx=32, pady=(6, 0))
+        self.status_label.pack(fill="x", padx=32, pady=(6, 10))
 
-        # ── Log console ───────────────────────────────────────────────────────
-        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=30, pady=(10, 0))
-        log_header = tk.Frame(self, bg=BG, pady=6)
-        log_header.pack(fill="x", padx=30)
-        tk.Label(log_header, text="LOG", font=("Courier", 9, "bold"),
-                 fg=TEXT_DIM, bg=BG).pack(side="left")
-        tk.Button(log_header, text="Clear", font=("Courier", 9),
-                  bg=BG, fg=TEXT_DIM, relief="flat", cursor="hand2",
-                  activebackground=SURFACE, activeforeground=TEXT,
-                  command=self._clear_log).pack(side="right")
-        tk.Button(log_header, text="⤢  Pop Out", font=("Courier", 9),
-                  bg=BG, fg=BLUE, relief="flat", cursor="hand2",
-                  activebackground=SURFACE, activeforeground=BLUE,
-                  command=self._detach_log).pack(side="right", padx=(0, 10))
-
+        # Hidden log widget — still exists for state, just not displayed inline
         self.log = scrolledtext.ScrolledText(
             self, font=("Courier", 10), bg=SURFACE, fg=TEXT,
             insertbackground=ACCENT, relief="flat", bd=0,
             state="disabled", wrap="word", padx=12, pady=10
         )
-        self.log.pack(fill="both", expand=True, padx=30, pady=(0, 20))
+        # log is NOT packed — it lives in the pop-out window only
 
         for tag, colour in [("info", TEXT), ("success", SUCCESS), ("warning", WARNING),
                              ("error", ERROR), ("dim", TEXT_DIM), ("accent", ACCENT)]:
@@ -463,6 +577,7 @@ class AudioSplitterApp(tk.Tk):
         # Apply initial mode
         self._set_mode("split")
         self._set_split_src("url")
+        self._set_convert_type("audio")
 
     # ── Mode switching ────────────────────────────────────────────────────────
 
@@ -484,21 +599,21 @@ class AudioSplitterApp(tk.Tk):
                                   activebackground=ACCENT_DIM, activeforeground="#1d2021")
             self.split_frame.pack(fill="x")
             self.chunk_frame.pack(fill="x")
-            self.btn_start.config(text="▶  DOWNLOAD & SPLIT")
+            self.btn_start.config(text="DOWNLOAD & SPLIT")
 
         elif mode == "convert":
             self.btn_convert.config(bg=ACCENT, fg="#1d2021",
                                     activebackground=ACCENT_DIM, activeforeground="#1d2021")
             self.convert_frame.pack(fill="x")
-            self.format_frame.pack(fill="x")
-            self.btn_start.config(text="▶  DOWNLOAD & CONVERT")
+            self._set_convert_type(self._convert_type.get())
+            self.btn_start.config(text="CONVERT")
 
         elif mode == "playlist":
             self.btn_playlist.config(bg=ACCENT, fg="#1d2021",
                                      activebackground=ACCENT_DIM, activeforeground="#1d2021")
             self.playlist_frame.pack(fill="x")
             self.format_frame.pack(fill="x")
-            self.btn_start.config(text="▶  DOWNLOAD PLAYLIST")
+            self.btn_start.config(text="DOWNLOAD PLAYLIST")
 
     def _set_split_src(self, src: str):
         self._split_src.set(src)
@@ -518,7 +633,56 @@ class AudioSplitterApp(tk.Tk):
                                        activebackground=SURFACE2, activeforeground=TEXT)
             self.split_file_frame.pack(fill="x")
 
-    # ── Dependency check ──────────────────────────────────────────────────────
+    def _set_convert_type(self, ctype: str):
+        self._convert_type.set(ctype)
+        for btn in [self.btn_cv_audio, self.btn_cv_video]:
+            btn.config(bg=SURFACE2, fg=TEXT_DIM,
+                       activebackground=BORDER, activeforeground=TEXT)
+        if ctype == "audio":
+            self.btn_cv_audio.config(bg=BORDER, fg=TEXT,
+                                     activebackground=SURFACE2, activeforeground=TEXT)
+            # Audio mode: URL only, no local toggle, no video opts
+            self.btn_cv_local.pack_forget()
+            self.btn_cv_url.pack_forget()
+            self.video_opts_frame.pack_forget()
+            self.cv_local_frame.pack_forget()
+            self.cv_url_frame.pack(fill="x")
+            self.format_frame.pack(fill="x")
+        else:
+            self.btn_cv_video.config(bg=BORDER, fg=TEXT,
+                                     activebackground=SURFACE2, activeforeground=TEXT)
+            # Video mode: show URL/local toggle, video opts, no format dropdown
+            self.format_frame.pack_forget()
+            self.btn_cv_url.pack(side="left", padx=(0, 6))
+            self.btn_cv_local.pack(side="left")
+            self._set_convert_src(self._convert_src.get())
+            self.video_opts_frame.pack(fill="x")
+
+    def _set_convert_src(self, src: str):
+        self._convert_src.set(src)
+        self.cv_url_frame.pack_forget()
+        self.cv_local_frame.pack_forget()
+        for btn in [self.btn_cv_url, self.btn_cv_local]:
+            btn.config(bg=SURFACE2, fg=TEXT_DIM,
+                       activebackground=BORDER, activeforeground=TEXT)
+        if src == "url":
+            self.btn_cv_url.config(bg=BORDER, fg=TEXT,
+                                   activebackground=SURFACE2, activeforeground=TEXT)
+            self.cv_url_frame.pack(fill="x")
+        else:
+            self.btn_cv_local.config(bg=BORDER, fg=TEXT,
+                                     activebackground=SURFACE2, activeforeground=TEXT)
+            self.cv_local_frame.pack(fill="x")
+
+    def _browse_convert_file(self):
+        exts = " ".join(f"*{e}" for e in sorted(ALL_EXTS))
+        path = filedialog.askopenfilename(
+            title="Select video or audio file",
+            filetypes=[("Video / Audio files", exts), ("All files", "*.*")]
+        )
+        if path:
+            self.convert_file_var.set(path)
+            self.dir_var.set(str(Path(path).parent))
 
     def _check_deps(self):
         ytdlp_path = self.ytdlp_var.get().strip()
@@ -543,6 +707,16 @@ class AudioSplitterApp(tk.Tk):
         self._log("Ready.", "dim")
 
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _toggle_tools(self):
+        if self._tools_expanded.get():
+            self.tools_card.pack_forget()
+            self._tools_expanded.set(False)
+            self._tools_toggle_btn.config(text="[ + ] Tool Paths")
+        else:
+            self.tools_card.pack(fill="x")
+            self._tools_expanded.set(True)
+            self._tools_toggle_btn.config(text="[ - ] Tool Paths")
 
     def _browse_binary(self, var):
         initial = str(Path(var.get()).parent) if var.get() else "/opt/homebrew/bin"
@@ -647,7 +821,7 @@ class AudioSplitterApp(tk.Tk):
         tk.Label(hdr, text="LOG", font=("Courier", 9, "bold"),
                  fg=TEXT_DIM, bg=BG).pack(side="left")
         tk.Button(hdr, text="Clear", font=("Courier", 9),
-                  bg=BG, fg=TEXT_DIM, relief="flat", cursor="hand2",
+                  bg=BG, fg=BLUE, relief="flat", cursor="hand2",
                   activebackground=SURFACE, activeforeground=TEXT,
                   command=self._clear_log).pack(side="right")
 
@@ -751,7 +925,21 @@ class AudioSplitterApp(tk.Tk):
             url = self.convert_url_var.get().strip()
             if not url:
                 self._log("Please enter a URL.", "warning"); return
-            args = (mode, url, None, self._get_format(), None, ffmpeg_path, ytdlp_path, out_root)
+            if self._convert_type.get() == "audio":
+                args = (mode, url, None, self._get_format(), None, ffmpeg_path, ytdlp_path, out_root)
+            else:
+                scale = self.scale_var.get().strip()
+                start = self.clip_start_var.get().strip()
+                dur   = self.clip_dur_var.get().strip()
+                if self._convert_src.get() == "local":
+                    local_path = self.convert_file_var.get().strip()
+                    if not local_path or not Path(local_path).exists():
+                        self._log("Please select a valid local file.", "warning"); return
+                    args = ("video_convert", None, local_path, scale, (start, dur), ffmpeg_path, ytdlp_path, out_root)
+                else:
+                    if not url:
+                        self._log("Please enter a URL.", "warning"); return
+                    args = ("video_convert", url, None, scale, (start, dur), ffmpeg_path, ytdlp_path, out_root)
 
         elif mode == "playlist":
             url = self.playlist_url_var.get().strip()
@@ -782,15 +970,17 @@ class AudioSplitterApp(tk.Tk):
 
     # ── Worker ────────────────────────────────────────────────────────────────
 
-    def _run(self, mode, url, local_file, fmt, chunk_sec, ffmpeg_path, ytdlp_path, out_root):
+    def _run(self, mode, url, local_file, fmt_or_scale, chunk_or_clip, ffmpeg_path, ytdlp_path, out_root):
         out_root.mkdir(parents=True, exist_ok=True)
 
         if mode == "split":
-            self._run_split(url, local_file, chunk_sec, ffmpeg_path, ytdlp_path, out_root)
+            self._run_split(url, local_file, chunk_or_clip, ffmpeg_path, ytdlp_path, out_root)
         elif mode == "convert":
-            self._run_convert(url, fmt, ffmpeg_path, ytdlp_path, out_root)
+            self._run_convert(url, fmt_or_scale, ffmpeg_path, ytdlp_path, out_root)
+        elif mode == "video_convert":
+            self._run_video_convert(url, local_file, fmt_or_scale, chunk_or_clip, ffmpeg_path, ytdlp_path, out_root)
         elif mode == "playlist":
-            self._run_playlist(url, fmt, ffmpeg_path, ytdlp_path, out_root)
+            self._run_playlist(url, fmt_or_scale, ffmpeg_path, ytdlp_path, out_root)
 
     # ── Split pipeline ────────────────────────────────────────────────────────
 
@@ -866,6 +1056,69 @@ class AudioSplitterApp(tk.Tk):
 
         # Clean up source if it differs from output
         if download_path.exists() and download_path != out_file:
+            try: download_path.unlink()
+            except Exception: pass
+
+        if ret != 0 or not self._running:
+            self._finish(False); return
+
+        self._log(f"✓ Saved → {out_file.name}", "success")
+        self._set_status(f"Done! Saved as {out_file.name}", SUCCESS)
+        self._finish(True)
+
+    # ── Video convert pipeline ────────────────────────────────────────────────
+
+    def _run_video_convert(self, url, local_file, scale_label, clip, ffmpeg_path, ytdlp_path, out_root):
+        start, dur = clip
+
+        scale_map = {
+            "1/1 — Original size": None,
+            "1/2 — Half size":     "iw/2:ih/2",
+            "1/4 — Quarter size":  "iw/4:ih/4",
+            "1920:1080 — 1080p":   "1920:1080",
+            "1280:720  — 720p":    "1280:720",
+            "854:480   — 480p":    "854:480",
+            "640:360   — 360p":    "640:360",
+        }
+        scale_val = scale_map.get(scale_label, "iw/2:ih/2")
+
+        self._log(f"Video convert — scale: {scale_label}", "accent")
+        if start or dur:
+            self._log(f"  Clip — start: {start or '0'}, duration: {dur or 'full'}", "dim")
+
+        if local_file:
+            download_path = Path(local_file)
+            self._log(f"Using local file: {download_path.name}", "accent")
+        else:
+            download_path = self._download_single(
+                url, ytdlp_path, out_root,
+                "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+            )
+            if download_path is None:
+                self._finish(False); return
+
+        title    = sanitise(download_path.stem)
+        out_file = out_root / f"{title}_converted.mp4"
+
+        self._set_status("Processing video…")
+        self._log(f"Processing → {out_file.name}", "accent")
+
+        cmd = [ffmpeg_path, "-y"]
+        if start:
+            cmd += ["-ss", start]
+        cmd += ["-i", str(download_path)]
+        if dur:
+            cmd += ["-t", dur]
+        if scale_val:
+            cmd += ["-vf", f"scale={scale_val}"]
+        else:
+            cmd += ["-c:v", "copy"]
+        cmd += ["-c:a", "aac", "-async", "1", str(out_file)]
+
+        ret = self._run_ffmpeg(cmd, ffmpeg_path)
+
+        # Only clean up downloaded files, never local source files
+        if not local_file and download_path.exists() and download_path != out_file:
             try: download_path.unlink()
             except Exception: pass
 
