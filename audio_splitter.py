@@ -444,6 +444,10 @@ class AudioSplitterApp(tk.Tk):
                   bg=BG, fg=TEXT_DIM, relief="flat", cursor="hand2",
                   activebackground=SURFACE, activeforeground=TEXT,
                   command=self._clear_log).pack(side="right")
+        tk.Button(log_header, text="⤢  Pop Out", font=("Courier", 9),
+                  bg=BG, fg=BLUE, relief="flat", cursor="hand2",
+                  activebackground=SURFACE, activeforeground=BLUE,
+                  command=self._detach_log).pack(side="right", padx=(0, 10))
 
         self.log = scrolledtext.ScrolledText(
             self, font=("Courier", 10), bg=SURFACE, fg=TEXT,
@@ -615,6 +619,76 @@ class AudioSplitterApp(tk.Tk):
         self.log.config(state="normal")
         self.log.delete("1.0", "end")
         self.log.config(state="disabled")
+
+    def _detach_log(self):
+        """Open the log in a standalone resizable window, kept in sync with the main log."""
+        # Only one detached window at a time
+        if hasattr(self, "_log_window") and self._log_window.winfo_exists():
+            self._log_window.lift()
+            return
+
+        win = tk.Toplevel(self)
+        win.title("AudioSplitter — Log")
+        win.geometry("900x500")
+        win.configure(bg=BG)
+        win.resizable(True, True)
+        self._log_window = win
+
+        # ── Header ──
+        hdr = tk.Frame(win, bg=BG, pady=8)
+        hdr.pack(fill="x", padx=20)
+        tk.Label(hdr, text="LOG", font=("Courier", 9, "bold"),
+                 fg=TEXT_DIM, bg=BG).pack(side="left")
+        tk.Button(hdr, text="Clear", font=("Courier", 9),
+                  bg=BG, fg=TEXT_DIM, relief="flat", cursor="hand2",
+                  activebackground=SURFACE, activeforeground=TEXT,
+                  command=self._clear_log).pack(side="right")
+
+        # ── Mirrored log widget ──
+        mirror = scrolledtext.ScrolledText(
+            win, font=("Courier", 10), bg=SURFACE, fg=TEXT,
+            insertbackground=ACCENT, relief="flat", bd=0,
+            state="disabled", wrap="word", padx=12, pady=10
+        )
+        mirror.pack(fill="both", expand=True, padx=20, pady=(0, 16))
+
+        for tag, colour in [("info", TEXT), ("success", SUCCESS), ("warning", WARNING),
+                             ("error", ERROR), ("dim", TEXT_DIM), ("accent", ACCENT)]:
+            mirror.tag_config(tag, foreground=colour)
+
+        # Copy current log contents into the mirror
+        self.log.config(state="normal")
+        content = self.log.get("1.0", "end-1c")
+        self.log.config(state="disabled")
+        if content:
+            mirror.config(state="normal")
+            mirror.insert("1.0", content)
+            mirror.see("end")
+            mirror.config(state="disabled")
+
+        # Patch _log so new entries go to both widgets simultaneously
+        original_log = self._log
+
+        def dual_log(msg, tag="info"):
+            original_log(msg, tag)
+            def _append_mirror():
+                if win.winfo_exists():
+                    mirror.config(state="normal")
+                    ts = datetime.now().strftime("%H:%M:%S")
+                    mirror.insert("end", f"[{ts}] ", "dim")
+                    mirror.insert("end", msg + "\n", tag)
+                    mirror.see("end")
+                    mirror.config(state="disabled")
+            self.after(0, _append_mirror)
+
+        self._log = dual_log
+
+        # Restore original _log when window is closed
+        def on_close():
+            self._log = original_log
+            win.destroy()
+
+        win.protocol("WM_DELETE_WINDOW", on_close)
 
     def _open_folder(self):
         p = Path(self.dir_var.get())
