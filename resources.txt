@@ -1,0 +1,132 @@
+================================================================================
+  AudioSplitter — Dependency & Troubleshooting Guide
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+  REQUIRED DEPENDENCIES
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Python 3.8+
+     https://www.python.org/downloads/
+
+  2. yt-dlp
+     pip install yt-dlp        (Python library — preferred)
+     brew install yt-dlp       (macOS Homebrew binary)
+     Default Homebrew path:    /opt/homebrew/bin/yt-dlp
+
+  3. ffmpeg  (system binary)
+     macOS:    brew install ffmpeg
+               Default path: /opt/homebrew/bin/ffmpeg
+     Windows:  winget install ffmpeg
+               OR https://ffmpeg.org/download.html (add bin/ folder to PATH)
+     Linux:    sudo apt install ffmpeg        # Debian / Ubuntu
+               sudo dnf install ffmpeg        # Fedora
+               sudo pacman -S ffmpeg          # Arch
+
+  4. tkinter  (Python GUI library — see platform notes below)
+
+
+────────────────────────────────────────────────────────────────────────────────
+  CONFIGURING TOOL PATHS IN THE APP
+────────────────────────────────────────────────────────────────────────────────
+
+  macOS GUI apps do not inherit your shell PATH, so binaries installed via
+  Homebrew (in /opt/homebrew/bin) may not be detected automatically.
+
+  To fix this:
+
+  1. Launch the app:  python3 audio_splitter.py
+  2. Scroll to the TOOL PATHS section
+  3. Enter the full path to each binary, or use Browse… to locate them:
+
+       yt-dlp:  /opt/homebrew/bin/yt-dlp
+       ffmpeg:  /opt/homebrew/bin/ffmpeg
+
+  4. Click "✓ Verify & Save Paths"
+     - Green ✓ = found and executable
+     - Red ✗   = not found or not executable
+
+  Paths are saved to ~/.audiosplitter_config.json and loaded automatically
+  on next launch.
+
+  To find a binary's full path, run in Terminal:
+     which yt-dlp
+     which ffmpeg
+
+
+────────────────────────────────────────────────────────────────────────────────
+  ALTERNATIVE FIXES FOR PATH DETECTION (macOS)
+────────────────────────────────────────────────────────────────────────────────
+
+  Option A — Symlink to /usr/local/bin (detected by GUI apps automatically):
+     sudo ln -s /opt/homebrew/bin/yt-dlp  /usr/local/bin/yt-dlp
+     sudo ln -s /opt/homebrew/bin/ffmpeg  /usr/local/bin/ffmpeg
+
+  Option B — Add Homebrew to login PATH (affects all GUI apps):
+     Add this line to ~/.zprofile:
+     eval "$(/opt/homebrew/bin/brew shellenv)"
+     Then log out and back in.
+
+  Option C — Use pip to install yt-dlp as a Python library (no PATH needed):
+     pip install yt-dlp
+     The app will use it directly without needing the binary path.
+
+
+────────────────────────────────────────────────────────────────────────────────
+  TKINTER SETUP BY PLATFORM
+────────────────────────────────────────────────────────────────────────────────
+
+  ── macOS ──────────────────────────────────────────────────────────────────
+
+  ERROR: ModuleNotFoundError: No module named '_tkinter'
+
+  Homebrew's python@3.x is NOT compiled with Tk support by default.
+  Install the Tk bindings for your Python version:
+
+    brew install python-tk@3.14   ← replace 3.14 with your version
+    python3 --version             ← check your version
+
+  Common versions:
+    brew install python-tk@3.11
+    brew install python-tk@3.12
+    brew install python-tk@3.13
+    brew install python-tk@3.14
+
+  Alternative — use the official python.org installer:
+    https://www.python.org/downloads/macos/
+    (bundles Tk automatically, no extra step needed)
+
+  ── Windows ────────────────────────────────────────────────────────────────
+
+  tkinter ships with the official python.org Windows installer.
+  If missing, reinstall Python from https://www.python.org/downloads/windows/
+  and ensure "tcl/tk and IDLE" is checked during installation.
+
+  ── Linux ──────────────────────────────────────────────────────────────────
+
+    sudo apt install python3-tk          # Debian / Ubuntu / Mint
+    sudo dnf install python3-tkinter     # Fedora / RHEL / CentOS
+    sudo pacman -S tk                    # Arch / Manjaro
+    sudo zypper install python3-tk       # openSUSE
+
+
+────────────────────────────────────────────────────────────────────────────────
+  QUICK START (macOS)
+────────────────────────────────────────────────────────────────────────────────
+
+  brew install ffmpeg yt-dlp python-tk@3.14
+  pip install yt-dlp
+  python3 audio_splitter.py
+
+
+────────────────────────────────────────────────────────────────────────────────
+  USEFUL LINKS
+────────────────────────────────────────────────────────────────────────────────
+
+  yt-dlp GitHub:          https://github.com/yt-dlp/yt-dlp
+  yt-dlp supported sites: https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md
+  ffmpeg downloads:       https://ffmpeg.org/download.html
+  Python downloads:       https://www.python.org/downloads/
+  Homebrew:               https://brew.sh
+
+================================================================================
