@@ -803,18 +803,30 @@ class AudioSplitterApp(tk.Tk):
         self._log(f"Fetching playlist info…", "accent")
         self._set_status("Fetching playlist…")
 
-        if not YT_DLP_AVAILABLE:
-            self._log("yt-dlp Python library required for playlist mode.", "error")
+        if not YT_DLP_AVAILABLE and (not ytdlp_path or not Path(ytdlp_path).is_file()):
+            self._log("yt-dlp not found. Set path in Tool Paths.", "error")
             self._finish(False); return
 
         # Fetch playlist entries first
         try:
-            with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True,
-                                    "extract_flat": True}) as ydl:
-                info    = ydl.extract_info(url, download=False)
-                entries = info.get("entries", [])
+            if YT_DLP_AVAILABLE:
+                with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True,
+                                        "extract_flat": True}) as ydl:
+                    info     = ydl.extract_info(url, download=False)
+                    entries  = info.get("entries", [])
+                    pl_title = sanitise(info.get("title", "playlist"))
+            else:
+                result = subprocess.run(
+                    [ytdlp_path, "--flat-playlist", "-J", "--no-warnings", url],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace"
+                )
+                if result.returncode != 0:
+                    raise RuntimeError("yt-dlp exited with error fetching playlist info")
+                info     = json.loads(result.stdout)
+                entries  = info.get("entries", [])
                 pl_title = sanitise(info.get("title", "playlist"))
-                self._log(f"Playlist: {pl_title} — {len(entries)} tracks", "success")
+
+            self._log(f"Playlist: {pl_title} — {len(entries)} tracks", "success")
         except Exception as e:
             self._log(f"Failed to fetch playlist: {e}", "error")
             self._finish(False); return
