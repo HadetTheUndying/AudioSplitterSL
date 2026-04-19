@@ -19,13 +19,44 @@ Built with Python + tkinter. Uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for
 - **Configurable chunk length** — type any duration or use presets (15 s, 29.9 s, 30 s, 60 s)
 - **🎨 Gruvbox dark theme**
 - **Tool path configuration** — manually set yt-dlp and ffmpeg paths if auto-detection fails
-- **Persistent settings** — tool paths saved across sessions
+- **Persistent settings** — tool paths and output folder saved across sessions
 
 ## Releases
 
 Pre-built executables for macOS and Windows are available on the [Releases](../../releases) page — no Python installation required.
 
 > ffmpeg and yt-dlp are **not** bundled and must be installed separately. See the setup instructions for your OS below.
+
+### ⚠️ macOS — Pre-built binary requires executable permission
+
+The macOS binary downloaded from Releases loses its executable bit during upload. Before running it for the first time:
+
+```bash
+chmod +x AudioSplitter-macOS
+./AudioSplitter-macOS
+```
+
+You will also need to clear the Gatekeeper quarantine flag on first launch:
+
+```bash
+xattr -d com.apple.quarantine AudioSplitter-macOS
+```
+
+Or right-click the file → **Open** → **Open** in the dialog.
+
+---
+
+## Persistent Settings
+
+AudioSplitter saves your preferences to `~/.audiosplitter_config.json` automatically. This includes:
+
+- **yt-dlp path** — saved when you click Verify & Save Paths
+- **ffmpeg path** — saved when you click Verify & Save Paths
+- **Output folder** — saved immediately when you change it via Browse
+
+The config file is OS-specific — paths are stored exactly as detected or entered on your system, so the file will look different on macOS, Windows, and Linux. It is not intended to be shared across machines.
+
+To reset to defaults, delete `~/.audiosplitter_config.json` and relaunch the app.
 
 ---
 
@@ -64,6 +95,7 @@ Output: `dist/AudioSplitter`
 yt-dlp:  /opt/homebrew/bin/yt-dlp
 ffmpeg:  /opt/homebrew/bin/ffmpeg
 ```
+Click **Verify & Save Paths** — these will be remembered on next launch.
 
 ---
 
