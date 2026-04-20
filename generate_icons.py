@@ -54,7 +54,7 @@ draw.ellipse([sx1 - hr + 10, sy1 - hr, sx1 + hr + 10, sy1 + hr], outline=TEXT, w
 
 # ── Save PNG ──────────────────────────────────────────────────────────────────
 img.save("icon.png", "PNG")
-print("✓ icon.png")
+print("OK: icon.png")
 
 # ── Save ICO (Windows multi-size) ─────────────────────────────────────────────
 ico_sizes = [16, 32, 48, 64, 128, 256]
@@ -62,7 +62,7 @@ ico_imgs  = [img.resize((s, s), Image.LANCZOS) for s in ico_sizes]
 ico_imgs[0].save("icon.ico", format="ICO",
                  sizes=[(s, s) for s in ico_sizes],
                  append_images=ico_imgs[1:])
-print("✓ icon.ico")
+print("OK: icon.ico")
 
 # ── Save ICNS (macOS — real binary format, PNG-encoded chunks) ────────────────
 # ICNS spec: magic 'icns' + total uint32 BE, then chunks of ostype + len + PNG
@@ -87,4 +87,4 @@ for size, ostype in SIZE_TYPES:
 icns_data = b'icns' + struct.pack('>I', 8 + len(chunks)) + chunks
 with open("icon.icns", "wb") as f:
     f.write(icns_data)
-print("✓ icon.icns")
+print("OK: icon.icns")
