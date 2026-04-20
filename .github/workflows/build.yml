@@ -1,9 +1,5 @@
 name: Build AudioSplitter
 
-# Triggers:
-#   - Push a version tag (e.g. git tag v1.0.0 && git push --tags)
-#     → builds executables and attaches them to a GitHub Release
-#   - Manual trigger from the Actions tab (no release created)
 on:
   push:
     tags:
@@ -19,54 +15,55 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            artifact_name: AudioSplitter
-            asset_name: AudioSplitter-macOS
+            asset_name: AudioSplitter-macOS.zip
           - os: windows-latest
-            artifact_name: AudioSplitter.exe
             asset_name: AudioSplitter-Windows.exe
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      # ── Checkout ─────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── Python ───────────────────────────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ── Dependencies ─────────────────────────────────────────────────────────
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yt-dlp pyinstaller
+          pip install yt-dlp pyinstaller Pillow
 
-      # ── Disable Windows Defender ──────────────────────────────────────────────
-      # Defender's real-time scanning frequently cancels PyInstaller mid-build
-      # by flagging the PKG assembly step. Safe to disable on ephemeral runners.
       - name: Disable Windows Defender (Windows only)
         if: runner.os == 'Windows'
         shell: powershell
         run: Set-MpPreference -DisableRealtimeMonitoring $true
 
-      # ── Build (macOS) ─────────────────────────────────────────────────────────
+      # Generate icons — macOS uses iconutil for a real .icns
+      - name: Generate icons (macOS)
+        if: runner.os == 'macOS'
+        run: python generate_icons.py
+
+      - name: Generate icons (Windows)
+        if: runner.os == 'Windows'
+        run: python generate_icons.py
+
+      # ── macOS build — onedir + .app bundle ─────────────────────────────────
       - name: Build executable (macOS)
         if: runner.os == 'macOS'
         shell: bash
         run: |
           pyinstaller \
-            --onefile \
             --windowed \
+            --onedir \
             --name AudioSplitter \
             --clean \
+            --icon icon.icns \
+            --osx-bundle-identifier com.audiosplitter.app \
             audio_splitter.py
 
-      # ── Build (Windows) ───────────────────────────────────────────────────────
-      # --noupx           skips UPX compression which Defender also targets
-      # --exclude-module  strips heavy unused packages to reduce memory pressure
+      # ── Windows build — onefile ─────────────────────────────────────────────
       - name: Build executable (Windows)
         if: runner.os == 'Windows'
         shell: powershell
@@ -77,34 +74,54 @@ jobs:
             --name AudioSplitter `
             --clean `
             --noupx `
+            --icon icon.ico `
             --exclude-module matplotlib `
             --exclude-module numpy `
             --exclude-module pandas `
             --exclude-module PIL `
             audio_splitter.py
 
-      # ── Rename artifacts ──────────────────────────────────────────────────────
-      - name: Rename artifact (macOS)
+      # ── Package artifacts ───────────────────────────────────────────────────
+      - name: Package artifact (macOS)
         if: runner.os == 'macOS'
-        run: mv dist/AudioSplitter dist/${{ matrix.asset_name }}
+        run: |
+          chmod +x dist/AudioSplitter.app/Contents/MacOS/AudioSplitter
+          cd dist && zip -r AudioSplitter-macOS.zip AudioSplitter.app
+          mv AudioSplitter-macOS.zip ../
 
       - name: Rename artifact (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        run: mv dist\AudioSplitter.exe "dist\${{ matrix.asset_name }}"
+        run: mv dist\AudioSplitter.exe "dist\AudioSplitter-Windows.exe"
 
-      # ── Upload artifact (always) ──────────────────────────────────────────────
-      - name: Upload build artifact
+      # ── Upload artifacts ────────────────────────────────────────────────────
+      - name: Upload build artifact (macOS)
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset_name }}
-          path: dist/${{ matrix.asset_name }}
+          name: AudioSplitter-macOS
+          path: AudioSplitter-macOS.zip
           retention-days: 30
 
-      # ── Attach to GitHub Release (tag pushes only) ────────────────────────────
-      - name: Upload to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload build artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioSplitter-Windows
+          path: dist/AudioSplitter-Windows.exe
+          retention-days: 30
+
+      # ── Attach to GitHub Release (tag pushes only) ──────────────────────────
+      - name: Upload to GitHub Release (macOS)
+        if: startsWith(github.ref, 'refs/tags/') && runner.os == 'macOS'
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/${{ matrix.asset_name }}
+          files: AudioSplitter-macOS.zip
+          generate_release_notes: true
+
+      - name: Upload to GitHub Release (Windows)
+        if: startsWith(github.ref, 'refs/tags/') && runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/AudioSplitter-Windows.exe
           generate_release_notes: true
