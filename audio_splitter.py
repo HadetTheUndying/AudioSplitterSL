@@ -946,10 +946,10 @@ class AudioSplitterApp(tk.Tk):
             args = (mode, url, local_file, None, chunk_sec, ffmpeg_path, ytdlp_path, out_root)
 
         elif mode == "convert":
-            url = self.convert_url_var.get().strip()
-            if not url:
-                self._log("Please enter a URL.", "warning"); return
             if self._convert_type.get() == "audio":
+                url = self.convert_url_var.get().strip()
+                if not url:
+                    self._log("Please enter a URL.", "warning"); return
                 args = (mode, url, None, self._get_format(), None, ffmpeg_path, ytdlp_path, out_root)
             else:
                 scale = self.scale_var.get().strip()
@@ -961,6 +961,7 @@ class AudioSplitterApp(tk.Tk):
                         self._log("Please select a valid local file.", "warning"); return
                     args = ("video_convert", None, local_path, scale, (start, dur), ffmpeg_path, ytdlp_path, out_root)
                 else:
+                    url = self.convert_url_var.get().strip()
                     if not url:
                         self._log("Please enter a URL.", "warning"); return
                     args = ("video_convert", url, None, scale, (start, dur), ffmpeg_path, ytdlp_path, out_root)
