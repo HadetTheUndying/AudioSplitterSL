@@ -41,10 +41,19 @@ DEFAULT_CHUNK_SEC = 29.9
 CONFIG_FILE       = Path.home() / ".audiosplitter_config.json"
 
 FALLBACK_PATHS = [
+    # macOS — Homebrew
     "/opt/homebrew/bin",
     "/usr/local/bin",
     "/usr/bin",
     "/bin",
+    # Windows — winget and common install locations
+    str(Path.home() / "AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-7.1.1-full_build/bin"),
+    str(Path.home() / "AppData/Local/Microsoft/WinGet/Links"),
+    str(Path.home() / "AppData/Local/Programs/ffmpeg/bin"),
+    str(Path.home() / "AppData/Local/Programs/yt-dlp"),
+    "C:/ffmpeg/bin",
+    "C:/Program Files/ffmpeg/bin",
+    "C:/Program Files (x86)/ffmpeg/bin",
 ]
 
 # Output format definitions: (label, extension, yt-dlp format, ffmpeg codec args)
@@ -67,13 +76,28 @@ ALL_EXTS   = AUDIO_EXTS | VIDEO_EXTS
 
 
 def probe_binary(name: str) -> str:
+    """Return the full path to `name` by checking shutil.which then common fallbacks."""
     found = shutil.which(name)
     if found:
         return found
+
+    # Check static fallback paths
     for base in FALLBACK_PATHS:
         candidate = Path(base) / name
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return str(candidate)
+        for suffix in ("", ".exe"):
+            p = Path(str(candidate) + suffix)
+            if p.is_file() and os.access(p, os.X_OK):
+                return str(p)
+
+    # Windows: glob-search winget's versioned package tree for the binary
+    if sys.platform == "win32":
+        winget_root = Path.home() / "AppData/Local/Microsoft/WinGet/Packages"
+        if winget_root.exists():
+            # e.g. Gyan.FFmpeg_*/ffmpeg-*/bin/ffmpeg.exe
+            for exe in winget_root.rglob(f"{name}.exe"):
+                if exe.is_file():
+                    return str(exe)
+
     return ""
 
 
