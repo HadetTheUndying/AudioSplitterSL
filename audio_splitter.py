@@ -410,11 +410,11 @@ class AudioSplitterApp(tk.Tk):
         fmt_menu.pack(side="left", ipady=4)
 
         # Style the dropdown popup list (native Tk listbox underneath ttk)
-        self.option_add("*TCombobox*Listbox.background",   SURFACE2)
-        self.option_add("*TCombobox*Listbox.foreground",   BLUE)
-        self.option_add("*TCombobox*Listbox.selectBackground", BORDER)
-        self.option_add("*TCombobox*Listbox.selectForeground", TEXT)
-        self.option_add("*TCombobox*Listbox.font",         ("Courier", 11))
+        self.option_add("*TCombobox*Listbox.background",      SURFACE2)
+        self.option_add("*TCombobox*Listbox.foreground",      BLUE)
+        self.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
+        self.option_add("*TCombobox*Listbox.selectForeground", BG)
+        self.option_add("*TCombobox*Listbox.font",             ("Courier", 11))
 
         # Style the combobox to match gruvbox
         style = ttk.Style()
