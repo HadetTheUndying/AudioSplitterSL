@@ -1016,7 +1016,7 @@ class AudioSplitterApp(tk.Tk):
             self._log(f"Using local file: {source.name}", "accent")
             download_path = source
         else:
-            download_path = self._download_single(url, ytdlp_path, out_root)
+            download_path = self._download_single(url, ytdlp_path, out_root, ffmpeg_path=ffmpeg_path)
             if download_path is None:
                 self._finish(False); return
             title = sanitise(download_path.stem)
@@ -1064,7 +1064,7 @@ class AudioSplitterApp(tk.Tk):
         _, ext, ydl_fmt, codec_args = fmt
         self._log(f"Converting to {ext.upper()}…", "accent")
 
-        download_path = self._download_single(url, ytdlp_path, out_root, ydl_fmt)
+        download_path = self._download_single(url, ytdlp_path, out_root, ydl_fmt, ffmpeg_path=ffmpeg_path)
         if download_path is None:
             self._finish(False); return
 
@@ -1117,7 +1117,8 @@ class AudioSplitterApp(tk.Tk):
         else:
             download_path = self._download_single(
                 url, ytdlp_path, out_root,
-                "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+                "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+                ffmpeg_path=ffmpeg_path
             )
             if download_path is None:
                 self._finish(False); return
@@ -1212,7 +1213,7 @@ class AudioSplitterApp(tk.Tk):
                 continue
 
             # Download
-            dl_path = self._download_single(track_url, ytdlp_path, pl_dir, ydl_fmt)
+            dl_path = self._download_single(track_url, ytdlp_path, pl_dir, ydl_fmt, ffmpeg_path=ffmpeg_path)
             if dl_path is None:
                 failed.append(track_title)
                 continue
@@ -1243,7 +1244,7 @@ class AudioSplitterApp(tk.Tk):
 
     # ── Shared download helper ────────────────────────────────────────────────
 
-    def _download_single(self, url, ytdlp_path, out_dir, ydl_fmt="bestvideo[ext=mp4]+bestaudio[ext=m4a]/best"):
+    def _download_single(self, url, ytdlp_path, out_dir, ydl_fmt="bestvideo[ext=mp4]+bestaudio[ext=m4a]/best", ffmpeg_path=None):
         """Download a single URL. Returns Path to downloaded file or None on failure."""
         self._set_status("Downloading…")
         self._log(f"Downloading: {url}", "dim")
@@ -1258,6 +1259,10 @@ class AudioSplitterApp(tk.Tk):
                     "no_warnings":    True,
                     "progress_hooks": [self._ydl_hook],
                 }
+                # Tell yt-dlp exactly where ffmpeg is so it can merge streams
+                # even when ffmpeg is not on the system PATH
+                if ffmpeg_path and Path(ffmpeg_path).is_file():
+                    ydl_opts["ffmpeg_location"] = str(Path(ffmpeg_path).parent)
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
                     # For playlists passed as single, grab first entry
@@ -1270,8 +1275,13 @@ class AudioSplitterApp(tk.Tk):
                     return None
 
                 outtmpl = str(out_dir / "%(title)s.%(ext)s")
+                cmd = [ytdlp_path, "-o", outtmpl, "-f", ydl_fmt, "--no-warnings"]
+                if ffmpeg_path and Path(ffmpeg_path).is_file():
+                    cmd += ["--ffmpeg-location", str(Path(ffmpeg_path).parent)]
+                cmd.append(url)
+
                 proc = subprocess.Popen(
-                    [ytdlp_path, "-o", outtmpl, "-f", ydl_fmt, "--no-warnings", url],
+                    cmd,
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                     text=True, encoding="utf-8", errors="replace"
                 )
